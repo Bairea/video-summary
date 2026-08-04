@@ -9,7 +9,7 @@ description: 本地视频总结工具：给定 YouTube / Bilibili 视频链接�
 
 ## 准备
 
-- 安装：`uv tool install video-summary`
+- 安装：`uv tool install vsum`
 - 首次本地转写前下载 ASR 模型：`vsum models --download`（约 1-2 GB）
 - AI 配置（Base URL / API Key / Model）：`vsum config set ai.baseUrl ...`、`vsum config set ai.apiKey ...`、`vsum config set ai.model ...`
 

@@ -13,8 +13,8 @@
 ## 安装
 
 ```bash
-uv tool install video-summary
-# 或 pip install video-summary
+uv tool install vsum
+# 或 pip install vsum
 ```
 
 首次使用前：
@@ -56,7 +56,7 @@ vsum skill uninstall   # 移除
 ```bash
 vsum uninstall             # 移除 skill 与临时痕迹，保留数据/模型
 vsum uninstall --purge-all # 同时删除数据目录与模型缓存
-# CLI 本体：uv tool uninstall video-summary
+# CLI 本体：uv tool uninstall vsum
 ```
 
 ## 数据目录

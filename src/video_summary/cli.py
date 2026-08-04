@@ -199,7 +199,7 @@ def uninstall(
         else:
             print(f"数据目录不存在：{data_dir}")
 
-    print("CLI 本体请用包管理器移除：uv tool uninstall video-summary（或 pip uninstall video-summary）")
+    print("CLI 本体请用包管理器移除：uv tool uninstall vsum（或 pip uninstall vsum）")
 
 
 if __name__ == "__main__":

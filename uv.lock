@@ -1069,7 +1069,7 @@ wheels = [
 ]
 
 [[package]]
-name = "video-summary"
+name = "vsum"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
