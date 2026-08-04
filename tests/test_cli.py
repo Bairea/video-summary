@@ -12,7 +12,7 @@ runner = CliRunner()
 def test_config_show_and_set(tmp_path, monkeypatch):
     result = runner.invoke(app, ["config"])
     assert result.exit_code == 0
-    assert json.loads(result.output)["ai"]["model"] == "gpt-4o-mini"
+    assert json.loads(result.output)["ai"]["model"] == "deepseek-v4-flash"
 
     result = runner.invoke(app, ["config", "set", "ai.model", "qwen-plus"])
     assert result.exit_code == 0

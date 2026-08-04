@@ -83,8 +83,8 @@ def default_settings() -> dict:
     return {
         "ai": {
             "provider": "openai_compatible",
-            "baseUrl": "https://api.openai.com",
-            "model": "gpt-4o-mini",
+            "baseUrl": "https://api.deepseek.com",
+            "model": "deepseek-v4-flash",
             "transcriptionModel": "large-v3-turbo",
             "asrEnabled": True,
         },

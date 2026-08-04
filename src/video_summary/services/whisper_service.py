@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from pathlib import Path
 
 from ..paths import resolve_models_dir
 from .settings_sync import load_settings_sync
@@ -16,8 +17,13 @@ def _load_model(model_size: str, download_root: str):
     from faster_whisper import WhisperModel
     if model_size not in _model_cache:
         logger.info("loading faster-whisper model %s (download_root=%s)", model_size, download_root)
-        _model_cache[model_size] = WhisperModel(model_size, device="auto", compute_type="int8",
-                                                download_root=download_root)
+        model_path = str(Path(download_root) / model_size)
+        if Path(model_path).is_dir():
+            # 本地已下载（vsum models --download 或离线转换），直接加载目录
+            _model_cache[model_size] = WhisperModel(model_path, device="auto", compute_type="int8")
+        else:
+            _model_cache[model_size] = WhisperModel(model_size, device="auto", compute_type="int8",
+                                                    download_root=download_root)
     return _model_cache[model_size]
 
 

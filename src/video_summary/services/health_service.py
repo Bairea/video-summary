@@ -16,12 +16,13 @@ def _file_exists(p) -> bool:
 
 def _get_ai_missing_fields(settings: dict) -> list[str]:
     missing = []
-    ai = settings.get("ai", {})
-    if not (ai.get("baseUrl") or "").strip():
+    from .openai_compat import resolve_ai_settings
+    resolved = resolve_ai_settings(settings)
+    if not resolved["baseUrl"]:
         missing.append("baseUrl")
-    if not (ai.get("apiKey") or "").strip():
+    if not resolved["apiKey"]:
         missing.append("apiKey")
-    if not (ai.get("model") or "").strip():
+    if not resolved["model"]:
         missing.append("model")
     return missing
 

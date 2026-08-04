@@ -166,7 +166,8 @@ def test_retry_failed_task(client, monkeypatch):
     assert got["retryable"] is True
 
     retried = client.post(f"/api/tasks/{tid}/retry")
-    assert retried.json()["task"]["status"] == "queued"
+    # enqueue 后 worker 可能已拾取任务（running），两种状态都表示重试已开始
+    assert retried.json()["task"]["status"] in ("queued", "running")
 
     deadline = time.time() + 5
     while time.time() < deadline:
