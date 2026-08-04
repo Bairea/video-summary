@@ -27,3 +27,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/video_summary"]
+force-include = { "src/video_summary/static" = "video_summary/static" }
+
+[tool.hatch.build.targets.sdist]
+force-include = { "src/video_summary/static" = "src/video_summary/static" }
