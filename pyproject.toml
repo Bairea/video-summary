@@ -1,0 +1,29 @@
+[project]
+name = "video-summary"
+version = "0.1.0"
+description = "Local-first video summarizer: subtitles (yt-dlp / faster-whisper), AI summary, mindmap, cited QA. CLI + web UI."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-dotenv",
+    "yt-dlp",
+    "faster-whisper",
+    "openai",
+    "typer",
+]
+
+[dependency-groups]
+dev = ["pytest", "httpx"]
+
+[project.scripts]
+vsum = "video_summary.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/video_summary"]

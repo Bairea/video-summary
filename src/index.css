@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Noto Sans SC", ui-sans-serif, system-ui;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 900px at 15% 12%, rgba(60, 246, 255, 0.14), transparent 55%),
+    radial-gradient(900px 700px at 85% 22%, rgba(0, 169, 255, 0.16), transparent 52%),
+    radial-gradient(1000px 800px at 55% 92%, rgba(17, 27, 47, 0.65), transparent 58%),
+    linear-gradient(180deg, #070a10, #05070c);
+  color: rgba(244, 247, 255, 0.92);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.01) 28%,
+    rgba(255, 255, 255, 0.03) 55%,
+    rgba(255, 255, 255, 0.015)
+  );
+  opacity: 0.55;
+  mix-blend-mode: overlay;
+}
+
+#root {
+  min-height: 100vh;
+}
