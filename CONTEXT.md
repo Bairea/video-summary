@@ -23,7 +23,7 @@ _Avoid_: captions, transcript
 通过 yt-dlp 从视频平台直接提取的字幕。Bilibili 部分视频需要 cookies。
 
 **Transcription（本地转写）**:
-通过 faster-whisper 将音频转为文本；在平台字幕不可用时作为字幕内容的来源。
+通过 mlx-whisper (Apple Silicon) 或 whisper.cpp CLI (其他平台) 将音频转为文本；在平台字幕不可用时作为字幕内容的来源。
 
 **Summary（摘要）**:
 AI 生成的视频内容摘要。

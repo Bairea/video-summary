@@ -43,9 +43,24 @@ def _detect_ytdlp(settings: dict) -> dict:
 
 
 def _detect_asr() -> dict:
-    if importlib.util.find_spec("faster_whisper"):
-        return {"ok": True, "detail": "faster-whisper 引擎已就绪"}
-    return {"ok": False, "detail": "未检测到 faster-whisper 运行时（pip 依赖缺失，请重装 video-summary）"}
+    """检测 ASR 引擎：Apple Silicon 用 mlx-whisper，其他用 whisper.cpp CLI。"""
+    import platform
+    import sys
+
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        if importlib.util.find_spec("mlx_whisper"):
+            return {"ok": True, "detail": "mlx-whisper 引擎已就绪 (Apple Silicon)"}
+        return {"ok": False, "detail": "未检测到 mlx-whisper 运行时（pip 依赖缺失，请重装 video-summary）"}
+
+    # 非 Apple Silicon：检查 whisper.cpp CLI
+    if shutil.which("whisper-cpp") or shutil.which("whisper.cpp"):
+        return {"ok": True, "detail": "whisper.cpp CLI 已就绪"}
+    # 检查常见安装位置
+    for p in ["/usr/local/bin/whisper-cpp", "/opt/homebrew/bin/whisper-cpp"]:
+        from pathlib import Path
+        if Path(p).is_file():
+            return {"ok": True, "detail": f"whisper.cpp CLI 已就绪: {p}"}
+    return {"ok": False, "detail": "未检测到 whisper.cpp 可执行文件（请安装 whisper.cpp 并添加到 PATH）"}
 
 
 def _detect_models() -> dict:
@@ -101,7 +116,7 @@ async def get_health_snapshot() -> dict:
         },
         "localWhisper": {
             "ok": asr["ok"],
-            "label": "本地 ASR (faster-whisper)",
+            "label": "本地 ASR",
             "required": False,
             "detail": asr["detail"],
         },

@@ -137,22 +137,39 @@ def config(
 
 @app.command()
 def models(
-    download: bool = typer.Option(False, "--download", help="下载 ASR 模型（faster-whisper）"),
+    download: bool = typer.Option(False, "--download", help="下载 ASR 模型"),
 ):
-    """查看或下载 ASR 模型。"""
+    """查看或下载 ASR 模型（Apple Silicon: mlx-whisper，其他: whisper.cpp）。"""
+    import platform
+    import sys
+
     models_dir = resolve_models_dir()
+    is_apple_silicon = sys.platform == "darwin" and platform.machine() == "arm64"
+
     if download:
-        size = load_settings()["ai"].get("transcriptionModel") or "large-v3-turbo"
-        print(f"正在下载模型 {size} 到 {models_dir} ...")
-        from faster_whisper import WhisperModel
-        WhisperModel(size, device="auto", compute_type="int8", download_root=str(models_dir))
-        print("模型下载完成")
+        size = load_settings()["ai"].get("transcriptionModel") or "large-v3"
+        if is_apple_silicon:
+            print(f"正在下载 mlx-whisper 模型 {size} ...")
+            import mlx_whisper
+            hf_repo = f"mlx-community/whisper-{size}-mlx"
+            mlx_whisper.transcribe("__init__", path_or_hf_repo=hf_repo)  # 触发下载
+            print("mlx-whisper 模型下载完成")
+        else:
+            print(f"正在下载 whisper.cpp 模型 {size} ...")
+            from .services.whisper_service import _download_whisper_cpp_model
+            _download_whisper_cpp_model(size, models_dir / f"ggml-{size}.bin")
+            print("whisper.cpp 模型下载完成")
         return
+
     if models_dir.exists() and any(models_dir.iterdir()):
         total = sum(f.stat().st_size for f in models_dir.rglob("*") if f.is_file())
+        engine = "mlx-whisper (Apple Silicon)" if is_apple_silicon else "whisper.cpp"
         print(f"模型目录：{models_dir}（{total / 1024 / 1024:.0f} MB）")
+        print(f"引擎：{engine}")
     else:
-        print(f"未检测到模型：{models_dir}（运行 vsum models --download 下载）")
+        engine = "mlx-whisper (Apple Silicon)" if is_apple_silicon else "whisper.cpp"
+        print(f"未检测到模型：{models_dir}")
+        print(f"引擎：{engine}（运行 vsum models --download 下载）")
 
 
 @app.command()
