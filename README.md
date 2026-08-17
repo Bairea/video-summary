@@ -24,10 +24,13 @@ uv tool install vsum
 vsum models --download
 
 # 配置 AI（Base URL / API Key / Model）
-vsum config set ai.baseUrl https://dashscope.aliyuncs.com/compatible-mode
+# 默认已指向 DeepSeek（OpenAI 兼容），只需设置 API Key；可改其他兼容服务如 DashScope
+vsum config set ai.baseUrl https://api.deepseek.com
 vsum config set ai.apiKey sk-xxx
-vsum config set ai.model qwen-plus
+vsum config set ai.model deepseek-v4-flash
 ```
+
+> 默认配置：`ai.baseUrl=https://api.deepseek.com`、`ai.model=deepseek-v4-flash`、`ai.transcriptionModel=large-v3-turbo`。任意 OpenAI 兼容 API 均可通过 `vsum config set` 切换。
 
 ## 使用
 

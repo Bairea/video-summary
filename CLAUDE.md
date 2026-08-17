@@ -1,0 +1,56 @@
+# Video Summary 开发指南
+
+本地优先的视频总结器。输入 YouTube / Bilibili 视频链接，获取字幕（平台字幕或本地 faster-whisper 转写），生成摘要、Markmap 导图与带引用的问答。以 Python 包 `vsum` 分发，提供 CLI 与 Web UI 两种使用方式，并面向 Agent 生态以 skill 形式分发。
+
+## 技术栈
+
+- **后端**：FastAPI + SQLite，Python >= 3.11，用 `uv` 管理。
+- **前端**：React + TypeScript + Vite + Tailwind，构建后产物嵌入 `src/video_summary/static/`，由 Python 包一并分发。
+- **ASR**：faster-whisper（本地转写，CPU/CUDA）。
+- **字幕**：yt-dlp（平台字幕，Bilibili 部分需 cookies）。
+- **AI**：OpenAI 兼容 API，默认指向 DeepSeek。
+
+## 模块结构（src/video_summary/）
+
+- `cli.py` — `vsum` 命令入口（summarize / serve / tasks / task / config / models / skill / uninstall）。
+- `api/` — FastAPI 路由（`app` 组装，`routes_tasks` / `routes_settings`）。
+- `services/` — 领域逻辑：`task_service`（流水线编排）、`ytdlp_service`、`whisper_service`、`subtitle_service`、`summary_service`、`mindmap_service`、`qa_service`、`openai_compat`、`job_queue`、`file_store`、`health_service`。
+- `repositories/` — SQLite 持久化（task / transcript / summary / mindmap / qa / settings）。
+- `lib/` — 工具：cookies、retry、字幕格式与解析。
+- `paths.py` — 数据/任务/模型目录解析（XDG，可用环境变量覆盖）。
+- `types.py` — 领域类型与默认配置（`default_settings`）。
+- `skills/` — 随 `vsum skill install` 分发到 `~/.claude/skills/` 的 Agent skill。
+
+## 流水线阶段
+
+parse → download → subtitles → summary → mindmap → qaIndex。阶段可独立失败与重试，状态持久化到 SQLite。
+
+## 常用命令
+
+```bash
+uv sync                 # Python 依赖
+npm install             # 前端依赖
+npm run build           # 构建前端到 src/video_summary/static/
+uv run pytest           # 测试
+npm run check           # 前端类型检查
+uv run uvicorn video_summary.api.app:app --port 3001   # 仅后端
+npm run dev             # 前端开发模式（vite，代理 /api 到 3001）
+```
+
+CLI 使用：
+
+```bash
+uv run vsum summarize "https://...youtube..." --json
+uv run vsum serve --open
+uv run vsum config set ai.apiKey sk-xxx
+uv run vsum models --download
+uv run vsum skill install
+```
+
+## 关键约定
+
+- 数据目录：`~/.local/share/video-summary/`，可用 `VIDEO_SUMMARY_DATA_DIR` 覆盖。
+- 模型目录：`resolve_models_dir()`，默认 `large-v3-turbo`。
+- 前端静态目录：`resolve_static_dir()`，环境变量 `VIDEO_SUMMARY_STATIC_DIR` 优先，其次包内 `static/`。
+- 平台字幕优先，本地转写兜底（由 `ai.asrEnabled` 控制）。
+- 领域术语（Task / Pipeline / 阶段）见 `CONTEXT.md`。
