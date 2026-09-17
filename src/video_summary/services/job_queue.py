@@ -6,11 +6,9 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable
 
+from ..lib.errors import JobCancelled
+
 logger = logging.getLogger(__name__)
-
-
-class JobCancelled(Exception):
-    """任务被取消（用户取消或队列取消）。"""
 
 
 @dataclass

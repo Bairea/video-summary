@@ -47,6 +47,14 @@ def _is_abort_like_error(error: BaseException, signal: asyncio.Event) -> bool:
     return bool(re.search(r"abort|aborted|canceled", str(error), re.IGNORECASE))
 
 
+async def _aborted(task_id: str, signal: asyncio.Event) -> bool:
+    """signal 置位时标记任务取消并返回 True。"""
+    if not signal.is_set():
+        return False
+    await asyncio.to_thread(task_repo.mark_task_canceled, task_id)
+    return True
+
+
 def infer_failure_code(message: str) -> str:
     if re.search(r"模型下载|模型", message):
         return "whisper_weights_missing"
@@ -91,6 +99,7 @@ class TaskService:
         task = task_repo.create_task(normalized, platform)
         ensure_task_dir(task["id"], settings["download"].get("outputDir"))
         self.queue.enqueue(task["id"], lambda signal: self.run_pipeline(task["id"], normalized, signal))
+        self.prune_old_tasks()
         return task
 
     def list(self) -> list[dict]:
@@ -123,6 +132,19 @@ class TaskService:
             raise RuntimeError("任务不存在")
         return task
 
+    def prune_old_tasks(self, max_tasks: int | None = None) -> None:
+        """按 storage.maxTasks 清理最旧的非活动任务，保持本地存储有界。"""
+        if max_tasks is None:
+            settings = load_settings_sync()
+            max_tasks = (settings.get("storage") or {}).get("maxTasks")
+        if not max_tasks or int(max_tasks) <= 0:
+            return
+        tasks = task_repo.list_tasks()  # created_at 倒序
+        active = {"queued", "running"}
+        removable = [t for t in reversed(tasks) if t["status"] not in active]  # 最旧在前
+        for t in removable[:max(0, len(tasks) - int(max_tasks))]:
+            self.remove(t["id"])
+
     async def run_pipeline(self, task_id: str, req: dict, signal: asyncio.Event) -> None:
         settings = await asyncio.to_thread(load_settings_sync)
         from ..paths import set_task_output_dir
@@ -130,11 +152,12 @@ class TaskService:
         ensure_task_dir(task_id, settings["download"].get("outputDir"))
 
         last_completed_stage: str | None = None
-        artifacts = empty_artifacts()
+        artifacts = await asyncio.to_thread(self._load_artifacts, task_id)
+        # 续跑：转写稿就绪（DB 标记 + 字幕文件在盘上）时，download/subtitles 不再重跑
+        transcript_ready = bool(artifacts.get("transcriptReady")) and task_file(task_id, "subtitles.json").is_file()
 
         try:
-            if signal.is_set():
-                await asyncio.to_thread(task_repo.mark_task_canceled, task_id)
+            if await _aborted(task_id, signal):
                 return
 
             info: dict | None = None
@@ -152,87 +175,101 @@ class TaskService:
                     "runtime": _build_running_runtime("parse", last_completed_stage, artifacts),
                 })
 
-            if signal.is_set():
-                await asyncio.to_thread(task_repo.mark_task_canceled, task_id)
+            if await _aborted(task_id, signal):
                 return
 
             if req["pipeline"].get("download"):
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "downloading", {
-                    "progress": 30, "error": None,
-                    "runtime": _build_running_runtime("download", last_completed_stage, artifacts),
-                })
-                await download_media(req["url"], str(task_file(task_id)), {
-                    "audioOnly": req["download"].get("audioOnly"),
-                    "quality": req["download"].get("quality"),
-                }, signal=signal)
-                last_completed_stage = "download"
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "downloading", {
-                    "progress": 45, "error": None,
-                    "runtime": _build_running_runtime("download", last_completed_stage, artifacts),
-                })
+                if transcript_ready:
+                    # 已有转写稿：媒体只服务于转写，无需重下
+                    last_completed_stage = "download"
+                else:
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "downloading", {
+                        "progress": 30, "error": None,
+                        "runtime": _build_running_runtime("download", last_completed_stage, artifacts),
+                    })
+                    await download_media(req["url"], str(task_file(task_id)), {
+                        "audioOnly": req["download"].get("audioOnly"),
+                        "quality": req["download"].get("quality"),
+                    }, signal=signal)
+                    last_completed_stage = "download"
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "downloading", {
+                        "progress": 45, "error": None,
+                        "runtime": _build_running_runtime("download", last_completed_stage, artifacts),
+                    })
 
-            if signal.is_set():
-                await asyncio.to_thread(task_repo.mark_task_canceled, task_id)
+            if await _aborted(task_id, signal):
                 return
 
             if req["pipeline"].get("subtitles"):
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "transcribing", {
-                    "progress": 55, "error": None,
-                    "runtime": _build_running_runtime("subtitles", last_completed_stage, artifacts),
-                })
-                result = await fetch_subtitles(task_id, req["url"], language=req.get("language"), signal=signal)
-                segments = result["segments"]
-                if not segments:
-                    raise RuntimeError("未能获取字幕（平台无字幕或需要 Cookies/登录）")
-                await asyncio.to_thread(transcript_repo.replace_transcript, task_id, segments)
-                task_file(task_id, "subtitles.json").write_text(json.dumps(segments), "utf-8")
-                artifacts = {**artifacts, "transcriptReady": True, "subtitleFormats": result["formats"]}
-                last_completed_stage = "subtitles"
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "transcribing", {
-                    "progress": 65, "error": None,
-                    "runtime": _build_running_runtime("subtitles", last_completed_stage, artifacts),
-                })
+                if transcript_ready:
+                    last_completed_stage = "subtitles"
+                else:
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "transcribing", {
+                        "progress": 55, "error": None,
+                        "runtime": _build_running_runtime("subtitles", last_completed_stage, artifacts),
+                    })
+                    result = await fetch_subtitles(task_id, req["url"], language=req.get("language"), signal=signal)
+                    segments = result["segments"]
+                    if not segments:
+                        raise RuntimeError("未能获取字幕（平台无字幕或需要 Cookies/登录）")
+                    await asyncio.to_thread(transcript_repo.replace_transcript, task_id, segments)
+                    task_file(task_id, "subtitles.json").write_text(json.dumps(segments), "utf-8")
+                    artifacts = {**artifacts, "transcriptReady": True, "subtitleFormats": result["formats"]}
+                    last_completed_stage = "subtitles"
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "transcribing", {
+                        "progress": 65, "error": None,
+                        "runtime": _build_running_runtime("subtitles", last_completed_stage, artifacts),
+                    })
 
-            if signal.is_set():
-                await asyncio.to_thread(task_repo.mark_task_canceled, task_id)
+            if await _aborted(task_id, signal):
                 return
 
             if req["pipeline"].get("summary"):
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "summarizing", {
-                    "progress": 75, "error": None,
-                    "runtime": _build_running_runtime("summary", last_completed_stage, artifacts),
-                })
-                segments = _load_segments_from_disk(task_id)
-                markdown = await generate_summary(segments, signal)
-                await asyncio.to_thread(summary_repo.upsert_summary, task_id, markdown)
-                artifacts = {**artifacts, "summaryReady": True}
-                last_completed_stage = "summary"
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "summarizing", {
-                    "progress": 82, "error": None,
-                    "runtime": _build_running_runtime("summary", last_completed_stage, artifacts),
-                })
+                existing_summary = None
+                if artifacts.get("summaryReady"):
+                    existing_summary = await asyncio.to_thread(summary_repo.get_summary, task_id)
+                if existing_summary:
+                    last_completed_stage = "summary"
+                else:
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "summarizing", {
+                        "progress": 75, "error": None,
+                        "runtime": _build_running_runtime("summary", last_completed_stage, artifacts),
+                    })
+                    segments = _load_segments_from_disk(task_id)
+                    markdown = await generate_summary(segments, signal)
+                    await asyncio.to_thread(summary_repo.upsert_summary, task_id, markdown)
+                    artifacts = {**artifacts, "summaryReady": True}
+                    last_completed_stage = "summary"
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "summarizing", {
+                        "progress": 82, "error": None,
+                        "runtime": _build_running_runtime("summary", last_completed_stage, artifacts),
+                    })
 
-            if signal.is_set():
-                await asyncio.to_thread(task_repo.mark_task_canceled, task_id)
+            if await _aborted(task_id, signal):
                 return
 
             if req["pipeline"].get("mindmap"):
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "mindmap", {
-                    "progress": 88, "error": None,
-                    "runtime": _build_running_runtime("mindmap", last_completed_stage, artifacts),
-                })
-                segments = _load_segments_from_disk(task_id)
-                mindmap = await generate_mindmap(segments, signal)
-                await asyncio.to_thread(mindmap_repo.upsert_mindmap, task_id, mindmap)
-                artifacts = {**artifacts, "mindmapReady": True}
-                last_completed_stage = "mindmap"
-                await asyncio.to_thread(task_repo.update_task_stage, task_id, "mindmap", {
-                    "progress": 92, "error": None,
-                    "runtime": _build_running_runtime("mindmap", last_completed_stage, artifacts),
-                })
+                existing_mindmap = None
+                if artifacts.get("mindmapReady"):
+                    existing_mindmap = await asyncio.to_thread(mindmap_repo.get_mindmap, task_id)
+                if existing_mindmap:
+                    last_completed_stage = "mindmap"
+                else:
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "mindmap", {
+                        "progress": 88, "error": None,
+                        "runtime": _build_running_runtime("mindmap", last_completed_stage, artifacts),
+                    })
+                    segments = _load_segments_from_disk(task_id)
+                    mindmap = await generate_mindmap(segments, signal)
+                    await asyncio.to_thread(mindmap_repo.upsert_mindmap, task_id, mindmap)
+                    artifacts = {**artifacts, "mindmapReady": True}
+                    last_completed_stage = "mindmap"
+                    await asyncio.to_thread(task_repo.update_task_stage, task_id, "mindmap", {
+                        "progress": 92, "error": None,
+                        "runtime": _build_running_runtime("mindmap", last_completed_stage, artifacts),
+                    })
 
-            if signal.is_set():
-                await asyncio.to_thread(task_repo.mark_task_canceled, task_id)
+            if await _aborted(task_id, signal):
                 return
 
             if req["pipeline"].get("qaIndex"):
@@ -277,6 +314,12 @@ class TaskService:
                     "artifacts": artifacts,
                 },
             })
+
+
+    def _load_artifacts(self, task_id: str) -> dict:
+        """读取已持久化的阶段产物标记，供续跑判断（新任务为全空）。"""
+        task = task_repo.get_task(task_id)
+        return (task or {}).get("artifacts") or empty_artifacts()
 
 
 def _load_segments_from_disk(task_id: str) -> list[dict]:

@@ -9,15 +9,21 @@
 _Avoid_: job
 
 **Pipeline（流水线）**:
-Task 内按序执行的阶段序列：parse → subtitles → summary → mindmap → qaIndex。阶段可独立失败与重试。
+Task 内按序执行的阶段序列：parse → download → subtitles → summary → mindmap → qaIndex。阶段可独立失败；重试会跳过已完成阶段（续跑），只补做失败部分。
 _Avoid_: workflow
 
 **Parse（解析）**:
 流水线第一阶段：解析视频 URL，获取标题与元数据。
 
+**Download（下载）**:
+按需下载音视频媒体，供本地转写与导出使用。
+
 **Subtitles（字幕）**:
 视频的逐句文本，是摘要、导图与问答的共同原料。来源有二：平台字幕与本地转写，产物统一为 SRT/VTT/TXT/JSON。
-_Avoid_: captions, transcript
+_Avoid_: captions
+
+**Transcript（转写稿）**:
+平台字幕与本地转写统一后的逐句文本产物（含时间戳），是摘要/导图/问答的实际输入。代码、数据与 UI 均以 transcript 命名（transcriptRepo、transcriptReady 等）。
 
 **Platform subtitles（平台字幕）**:
 通过 yt-dlp 从视频平台直接提取的字幕。Bilibili 部分视频需要 cookies。

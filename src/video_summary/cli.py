@@ -18,7 +18,7 @@ from .services.task_service import detect_platform, task_service
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 
 SETTABLE_PATHS = {
-    "ai.baseUrl", "ai.apiKey", "ai.model", "ai.transcriptionModel", "ai.asrEnabled",
+    "ai.provider", "ai.baseUrl", "ai.apiKey", "ai.model", "ai.transcriptionModel", "ai.asrEnabled",
     "download.proxy", "download.ytdlpPath", "download.cookiesPath", "download.outputDir",
 }
 
@@ -52,6 +52,7 @@ def summarize(
             task = task_repo.create_task(req, platform)
             ensure_task_dir(task["id"], settings["download"].get("outputDir"))
             await task_service.run_pipeline(task["id"], req, asyncio.Event())
+            task_service.prune_old_tasks()
             return task_repo.get_task(task["id"])
 
         return asyncio.run(_run())

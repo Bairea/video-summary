@@ -47,7 +47,7 @@ def _transcribe_sync(audio_path: str, model_size: str, download_root: str, langu
 def format_whisper_error(error: Exception) -> str:
     message = str(error)
     if isinstance(error, OSError):
-        return f"模型下载或音频读取失败：{message}（请检查网络并重试，或执行 vsum models download）"
+        return f"模型下载或音频读取失败：{message}（请检查网络并重试，或执行 vsum models --download）"
     return message
 
 

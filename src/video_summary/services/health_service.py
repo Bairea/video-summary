@@ -52,7 +52,7 @@ def _detect_models() -> dict:
     models_dir = resolve_models_dir()
     if models_dir.exists() and any(models_dir.iterdir()):
         return {"ok": True, "detail": f"已检测到模型目录：{models_dir}", "path": str(models_dir)}
-    return {"ok": False, "detail": f"未检测到模型文件：{models_dir}（运行 vsum models download 下载）", "path": str(models_dir)}
+    return {"ok": False, "detail": f"未检测到模型文件：{models_dir}（运行 vsum models --download 下载）", "path": str(models_dir)}
 
 
 async def get_health_snapshot() -> dict:

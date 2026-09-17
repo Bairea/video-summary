@@ -34,9 +34,11 @@ async def lifespan(_app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title="video-summary", lifespan=lifespan, docs_url=None, redoc_url=None)
 
+    # 仅监听 127.0.0.1（见 vsum serve）；CORS 只放行 localhost 来源，
+    # 避免任意网页通过浏览器脚本调用本机无鉴权 API。curl/Agent 等非浏览器客户端不受影响。
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
         allow_methods=["*"],
         allow_headers=["*"],
     )

@@ -12,7 +12,7 @@ runner = CliRunner()
 def test_config_show_and_set(tmp_path, monkeypatch):
     result = runner.invoke(app, ["config"])
     assert result.exit_code == 0
-    assert json.loads(result.output)["ai"]["model"] == "deepseek-v4-flash"
+    assert json.loads(result.output)["ai"]["model"] == "grok-4.6"
 
     result = runner.invoke(app, ["config", "set", "ai.model", "qwen-plus"])
     assert result.exit_code == 0
@@ -75,7 +75,9 @@ def test_tasks_empty():
 
 
 def test_skill_install_uninstall(tmp_path, monkeypatch):
+    # Windows 上 Path.home() 认 USERPROFILE，POSIX 认 HOME，两个都设
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
     result = runner.invoke(app, ["skill", "install"])
     assert result.exit_code == 0
     skill_dir = tmp_path / ".claude" / "skills" / "video-summary"
@@ -92,6 +94,7 @@ def test_skill_install_uninstall(tmp_path, monkeypatch):
 
 def test_uninstall_conservative(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
     # 造数据目录
     data_dir = tmp_path / "data"
     (data_dir / "models").mkdir(parents=True)

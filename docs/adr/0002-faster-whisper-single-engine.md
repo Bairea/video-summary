@@ -5,3 +5,5 @@
 - **Status**: accepted
 - **Considered Options**: mlx-whisper（macOS 专用、本机更快，但与包的分发定位矛盾）；双引擎（违反项目"不写 fallback 路径"规则）
 - **Consequences**: 模型改为从 HuggingFace 下载（faster-whisper-large-v3），缓存目录置于数据目录内（`~/.local/share/video-summary/models/`），便于 `vsum uninstall --purge-all` 精确清理
+
+> **Update（2026-09）**: 默认权重后续调整为 `large-v3-turbo`（速度与体积优先），可通过 `ai.transcriptionModel` 覆盖，见 README 默认配置。下载与缓存目录决策不变。

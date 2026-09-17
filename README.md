@@ -5,7 +5,7 @@
 ## 特性
 
 - 平台字幕优先，本地 ASR 兜底（faster-whisper，跨平台 CPU/CUDA）
-- 摘要 / Markmap 导图 / 引用式问答（OpenAI 兼容 API，支持 DashScope 等）
+- 摘要 / Markmap 导图 / 引用式问答（支持 Anthropic Messages 与 OpenAI 兼容两种协议）
 - 单向 CLI（`vsum summarize`）与 Web UI（`vsum serve`）共用同一流水线
 - Agent skill 分发：`vsum skill install` 安装到 `~/.claude/skills/`
 - 干净卸载：`vsum uninstall`（保守）与 `vsum uninstall --purge-all`
@@ -24,13 +24,19 @@ uv tool install vsum
 vsum models --download
 
 # 配置 AI（Base URL / API Key / Model）
-# 默认已指向 DeepSeek（OpenAI 兼容），只需设置 API Key；可改其他兼容服务如 DashScope
-vsum config set ai.baseUrl https://api.deepseek.com
+# 默认走 Anthropic Messages 协议（https://www.yydsapi.uno + grok-4.6），只需设置 API Key
 vsum config set ai.apiKey sk-xxx
-vsum config set ai.model deepseek-v4-flash
 ```
 
-> 默认配置：`ai.baseUrl=https://api.deepseek.com`、`ai.model=deepseek-v4-flash`、`ai.transcriptionModel=large-v3-turbo`。任意 OpenAI 兼容 API 均可通过 `vsum config set` 切换。
+> 默认配置：`ai.provider=anthropic_compatible`、`ai.baseUrl=https://www.yydsapi.uno`、`ai.model=grok-4.6`、`ai.transcriptionModel=large-v3-turbo`。也可切换为 OpenAI 兼容协议（DeepSeek、DashScope 等）：
+>
+> ```bash
+> vsum config set ai.provider openai_compatible
+> vsum config set ai.baseUrl https://api.deepseek.com
+> vsum config set ai.model deepseek-v4-flash
+> ```
+>
+> API Key 也可用环境变量 `ANTHROPIC_API_KEY`（Anthropic Messages）或 `DEEPSEEK_API_KEY`（OpenAI 兼容）提供。
 
 ## 使用
 
@@ -47,6 +53,8 @@ vsum summarize "https://www.bilibili.com/video/BV1xx" --json   # 结构化输出
 vsum serve --open   # http://127.0.0.1:3001
 ```
 
+服务仅监听本机 127.0.0.1，且 CORS 只放行 localhost 来源；任务超出 `storage.maxTasks`（默认 200）时自动清理最旧的非活动任务。
+
 ### Agent skill
 
 ```bash
@@ -57,7 +65,7 @@ vsum skill uninstall   # 移除
 ### 卸载
 
 ```bash
-vsum uninstall             # 移除 skill 与临时痕迹，保留数据/模型
+vsum uninstall             # 移除已安装的 skill，保留数据与模型
 vsum uninstall --purge-all # 同时删除数据目录与模型缓存
 # CLI 本体：uv tool uninstall vsum
 ```

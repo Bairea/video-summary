@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AppHealthCheck } from "../../shared/types";
+import type { AppHealthCheck, AppSettings } from "../../shared/types";
 import Panel from "@/components/Panel";
 import Button from "@/components/Button";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { AlertTriangle, CheckCircle2, FileUp, LoaderCircle, Save, ShieldCheck, TestTube2 } from "lucide-react";
+
+type AiProvider = AppSettings["ai"]["provider"];
+
+function normalizeProvider(provider: string | undefined): AiProvider {
+  return provider === "openai_compatible" ? "openai_compatible" : "anthropic_compatible";
+}
 
 function getHealthCardTone(item: AppHealthCheck) {
   if (item.ok) {
@@ -35,6 +41,7 @@ export default function Settings() {
     fetchHealth();
   }, [fetchHealth, fetchSettings]);
 
+  const [provider, setProvider] = useState<AiProvider>("anthropic_compatible");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
@@ -48,6 +55,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (!settings) return;
+    setProvider(normalizeProvider(settings.ai.provider));
     setBaseUrl(settings.ai.baseUrl || "");
     setApiKey(settings.ai.apiKey || "");
     setModel(settings.ai.model || "");
@@ -71,6 +79,7 @@ export default function Settings() {
   const dirty = useMemo(() => {
     if (!settings) return false;
     return (
+      normalizeProvider(settings.ai.provider) !== provider ||
       (settings.ai.baseUrl || "") !== baseUrl ||
       (settings.ai.apiKey || "") !== apiKey ||
       (settings.ai.model || "") !== model ||
@@ -81,13 +90,13 @@ export default function Settings() {
       (settings.download.cookiesPath || "") !== cookiesPath ||
       (settings.download.outputDir || "") !== outputDir
     );
-  }, [settings, baseUrl, apiKey, model, transcriptionModel, asrEnabled, ytdlpPath, proxy, cookiesPath, outputDir]);
+  }, [settings, provider, baseUrl, apiKey, model, transcriptionModel, asrEnabled, ytdlpPath, proxy, cookiesPath, outputDir]);
 
   async function onSave() {
     setTested(undefined);
     const saved = await saveSettings({
       ai: {
-        provider: "openai_compatible",
+        provider,
         baseUrl: baseUrl.trim(),
         apiKey: apiKey.trim(),
         model: model.trim(),
@@ -194,8 +203,10 @@ export default function Settings() {
         <Panel className="p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-sm font-semibold">AI（OpenAI 兼容）</div>
-              <div className="mt-1 max-w-xl text-xs leading-5 text-white/58">用于摘要、导图与问答。支持自建网关或本地代理。</div>
+              <div className="text-sm font-semibold">AI 接口</div>
+              <div className="mt-1 max-w-xl text-xs leading-5 text-white/58">
+                用于摘要、导图与问答。支持 Anthropic Messages 与 OpenAI 兼容两种协议的自建网关或本地代理。
+              </div>
             </div>
             <div className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-[11px] text-white/65 ring-1 ring-white/10">
               <ShieldCheck className="h-4 w-4 text-neon-400/90" />
@@ -205,11 +216,23 @@ export default function Settings() {
 
           <div className="mt-4 grid gap-3">
             <label className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <div className="text-[11px] text-white/55">接口协议</div>
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value as AiProvider)}
+                className="mt-1 w-full bg-transparent text-sm text-white/85 outline-none [&>option]:bg-ink-900 [&>option]:text-white"
+              >
+                <option value="anthropic_compatible">Anthropic Messages</option>
+                <option value="openai_compatible">OpenAI 兼容</option>
+              </select>
+            </label>
+
+            <label className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <div className="text-[11px] text-white/55">Base URL</div>
               <input
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder="https://api.openai.com"
+                placeholder={provider === "anthropic_compatible" ? "https://www.yydsapi.uno" : "https://api.openai.com"}
                 className="mt-1 w-full bg-transparent text-sm text-white/85 outline-none"
               />
             </label>
@@ -230,7 +253,7 @@ export default function Settings() {
               <input
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                placeholder="gpt-4o-mini"
+                placeholder={provider === "anthropic_compatible" ? "grok-4.6" : "gpt-4o-mini"}
                 className="mt-1 w-full bg-transparent text-sm text-white/85 outline-none"
               />
             </label>

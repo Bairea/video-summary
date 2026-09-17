@@ -7,8 +7,6 @@ from datetime import datetime, timezone
 from ..db import db_session
 from ..types import TaskDTO, empty_artifacts
 
-TASK_EXECUTION_STAGE_ORDER = ["parse", "download", "subtitles", "summary", "mindmap", "qaIndex"]
-
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
@@ -148,6 +146,7 @@ def get_task_request(task_id: str) -> dict | None:
 
 
 def reset_task_for_retry(task_id: str) -> None:
+    """重置失败/取消状态以便重试。保留 artifacts，让 run_pipeline 跳过已完成阶段（续跑）。"""
     row = get_task_row(task_id)
     if not row:
         return
@@ -164,7 +163,7 @@ def reset_task_for_retry(task_id: str) -> None:
                 "failureStage": None,
                 "failureCode": None,
                 "retryable": False,
-                "artifacts": empty_artifacts(),
+                "artifacts": runtime.get("artifacts") or empty_artifacts(),
             }), now, task_id),
         )
 

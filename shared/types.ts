@@ -93,7 +93,7 @@ export interface MindmapDTO {
 
 export interface AppSettings {
   ai: {
-    provider: "openai_compatible";
+    provider: "openai_compatible" | "anthropic_compatible";
     baseUrl?: string;
     apiKey?: string;
     model?: string;

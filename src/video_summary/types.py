@@ -82,9 +82,9 @@ def empty_artifacts() -> TaskArtifacts:
 def default_settings() -> dict:
     return {
         "ai": {
-            "provider": "openai_compatible",
-            "baseUrl": "https://api.deepseek.com",
-            "model": "deepseek-v4-flash",
+            "provider": "anthropic_compatible",
+            "baseUrl": "https://www.yydsapi.uno",
+            "model": "grok-4.6",
             "transcriptionModel": "large-v3-turbo",
             "asrEnabled": True,
         },

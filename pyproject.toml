@@ -12,6 +12,7 @@ dependencies = [
     "yt-dlp",
     "faster-whisper",
     "openai",
+    "httpx",
     "typer",
 ]
 

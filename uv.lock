@@ -1070,11 +1070,12 @@ wheels = [
 
 [[package]]
 name = "vsum"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "faster-whisper" },
+    { name = "httpx" },
     { name = "openai" },
     { name = "python-dotenv" },
     { name = "typer" },
@@ -1092,6 +1093,7 @@ dev = [
 requires-dist = [
     { name = "fastapi" },
     { name = "faster-whisper" },
+    { name = "httpx" },
     { name = "openai" },
     { name = "python-dotenv" },
     { name = "typer" },

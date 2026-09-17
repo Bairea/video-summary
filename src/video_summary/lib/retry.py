@@ -3,7 +3,7 @@
 import asyncio
 import random
 
-from ..services.job_queue import JobCancelled
+from .errors import JobCancelled
 
 
 async def retry(fn, retries: int = 3, base_delay_ms: int = 200, max_delay_ms: int = 3000,

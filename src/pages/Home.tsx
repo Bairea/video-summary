@@ -339,11 +339,11 @@ export default function Home() {
           <div className="mt-3 grid gap-3 text-sm text-white/70 md:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="font-semibold text-white/85">1) 配置 AI</div>
-              <div className="mt-1 text-xs text-white/55">设置 Base URL / API Key / Model，支持 OpenAI 兼容接口。</div>
+              <div className="mt-1 text-xs text-white/55">设置 Base URL / API Key / Model，支持 Anthropic Messages 与 OpenAI 兼容接口。</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="font-semibold text-white/85">2) 获取字幕</div>
-              <div className="mt-1 text-xs text-white/55">优先拉取平台字幕；没有字幕的内容需要额外 ASR（后续可扩展）。</div>
+              <div className="mt-1 text-xs text-white/55">优先拉取平台字幕；不可用时自动本地转写（faster-whisper），可在设置中关闭。</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="font-semibold text-white/85">3) 生成结构化知识</div>
