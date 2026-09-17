@@ -9,3 +9,5 @@ dist-electron/
 .data/
 .DS_Store
 src/video_summary/static/
+
+.claude

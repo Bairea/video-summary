@@ -35,7 +35,7 @@ Task 执行流水线：`parse → subtitles → summary → mindmap → qaIndex`
 | Apple Silicon (M1/M2/M3/M4) | mlx-whisper | pip 依赖 |
 | 其他 | whisper.cpp CLI | 用户自行安装到 PATH |
 
-配置 `transcriptionModel` 统一用 `large-v3`，内部映射到各引擎模型 ID。
+配置 `transcriptionModel` 默认 `large-v3-turbo`，whisper_service 内部映射到各引擎模型 ID（未命中的尺寸回退到 `large-v3`）。
 
 模型下载 fallback：HuggingFace → ModelScope。
 
