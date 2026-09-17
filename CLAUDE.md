@@ -14,7 +14,7 @@
 
 - `cli.py` — `vsum` 命令入口（summarize / serve / tasks / task / config / models / skill / uninstall）。
 - `api/` — FastAPI 路由（`app` 组装，`routes_tasks` / `routes_settings`）。
-- `services/` — 领域逻辑：`task_service`（流水线编排）、`ytdlp_service`、`whisper_service`、`subtitle_service`、`summary_service`、`mindmap_service`、`qa_service`、`openai_compat`、`job_queue`、`file_store`、`health_service`。
+- `services/` — 领域逻辑：`task_service`（流水线编排）、`ytdlp_service`、`whisper_service`、`subtitle_service`、`summary_service`、`mindmap_service`、`qa_service`、`openai_compat`（AI 统一入口，按 `ai.provider` 分发）、`anthropic_compat`（Anthropic Messages 协议实现）、`job_queue`、`file_store`、`health_service`。
 - `repositories/` — SQLite 持久化（task / transcript / summary / mindmap / qa / settings）。
 - `lib/` — 工具：cookies、retry、ai_http（AI 网关共用：Base URL 归一化/可取消等待）、errors（跨层错误类型）、字幕格式与解析。
 - `paths.py` — 数据/任务/模型目录解析（XDG，可用环境变量覆盖）。
@@ -60,7 +60,7 @@ uv run vsum skill install
 
 - 数据目录：`~/.local/share/video-summary/`，可用 `VIDEO_SUMMARY_DATA_DIR` 覆盖。
 - Web 服务仅监听 `127.0.0.1`；CORS 只放行 localhost 来源（本机无鉴权 API 不对任意网页开放）。
-- 模型目录：`resolve_models_dir()`，默认 `large-v3-turbo`。
+- 模型目录：`resolve_models_dir()`（数据目录下 `models/`）；ASR 模型名 `ai.transcriptionModel` 默认 `large-v3-turbo`（引擎映射见「ASR 引擎」）。
 - 前端静态目录：`resolve_static_dir()`，环境变量 `VIDEO_SUMMARY_STATIC_DIR` 优先，其次包内 `static/`。
 - 平台字幕优先，本地转写兜底（由 `ai.asrEnabled` 控制）。
 - 领域术语（Task / Pipeline / 阶段）见 `CONTEXT.md`。

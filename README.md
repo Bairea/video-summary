@@ -19,8 +19,11 @@ uv tool install vsum
 
 首次使用前：
 
+- macOS（Apple Silicon）：ASR 引擎 mlx-whisper 随包安装，开箱即用
+- Windows / Linux：ASR 引擎为 whisper.cpp CLI，需自行[安装 whisper.cpp](https://github.com/ggml-org/whisper.cpp) 并加入 PATH（终端能执行 `whisper-cpp` 即可）
+
 ```bash
-# 下载 ASR 模型（约 1-2 GB）
+# 下载 ASR 模型权重（默认解析为 large-v3，约 3 GB）
 vsum models --download
 
 # 配置 AI（Base URL / API Key / Model）

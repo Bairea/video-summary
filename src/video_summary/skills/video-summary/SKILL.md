@@ -10,8 +10,9 @@ description: 本地视频总结工具：给定 YouTube / Bilibili 视频链接�
 ## 准备
 
 - 安装：`uv tool install vsum`
-- 首次本地转写前下载 ASR 模型：`vsum models --download`（约 1-2 GB）
-- AI 配置（Base URL / API Key / Model）：`vsum config set ai.baseUrl ...`、`vsum config set ai.apiKey ...`、`vsum config set ai.model ...`
+- ASR 引擎：macOS（Apple Silicon）用随包的 mlx-whisper；Windows / Linux 需用户自行安装 whisper.cpp 并加入 PATH
+- 首次本地转写前下载 ASR 模型：`vsum models --download`（约 3 GB）
+- AI 配置：默认走 Anthropic Messages 协议（yydsapi 网关 + grok-4.6），只需 `vsum config set ai.apiKey sk-xxx`；如需 OpenAI 兼容服务（DeepSeek、DashScope 等），先 `vsum config set ai.provider openai_compatible`，再配 Base URL / Model
 
 ## 命令速查
 
