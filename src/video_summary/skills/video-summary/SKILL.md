@@ -46,5 +46,5 @@ description: 本地视频总结工具：给定 YouTube / Bilibili 视频链接�
 
 ## 注意
 
-- 转写长视频耗时较长（faster-whisper 本地推理），不要重复运行
+- 转写长视频耗时较长（本地 ASR 推理：Apple Silicon 用 mlx-whisper，其他平台用 whisper.cpp），不要重复运行
 - Bilibili 部分视频需要 cookies：`vsum config set download.cookiesPath ~/.local/share/video-summary/cookies.txt`
