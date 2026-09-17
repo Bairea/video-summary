@@ -343,7 +343,7 @@ export default function Home() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="font-semibold text-white/85">2) 获取字幕</div>
-              <div className="mt-1 text-xs text-white/55">优先拉取平台字幕；不可用时自动本地转写（faster-whisper），可在设置中关闭。</div>
+              <div className="mt-1 text-xs text-white/55">优先拉取平台字幕；不可用时自动本地转写（mlx-whisper / whisper.cpp），可在设置中关闭。</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="font-semibold text-white/85">3) 生成结构化知识</div>

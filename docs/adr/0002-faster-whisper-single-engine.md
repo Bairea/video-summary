@@ -1,9 +1,12 @@
-# ASR 引擎采用 faster-whisper，单一引擎不设 fallback
+# ASR 引擎：Apple Silicon 用 mlx-whisper，其他平台用 whisper.cpp CLI
 
-原实现用 mlx-whisper，仅支持 Apple Silicon，与"跨平台 Python 包"的定位冲突。决定采用 faster-whisper（CTranslate2，支持 CPU/CUDA/ROCm）作为唯一 ASR 引擎，不保留 mlx 分支。代价：开发机（M 芯片）上的转写速度低于 mlx，换来的是 Windows/Linux 与无 GPU 环境的可用性。
+原实现用 faster-whisper，实测速度慢于 mlx-whisper 和 whisper.cpp。决定改为：Apple Silicon（M1/M2/M3/M4）使用 mlx-whisper（原生 Metal 加速），其他平台使用 whisper.cpp CLI（跨平台 C++ 实现）。
 
 - **Status**: accepted
-- **Considered Options**: mlx-whisper（macOS 专用、本机更快，但与包的分发定位矛盾）；双引擎（违反项目"不写 fallback 路径"规则）
-- **Consequences**: 模型改为从 HuggingFace 下载（faster-whisper-large-v3），缓存目录置于数据目录内（`~/.local/share/video-summary/models/`），便于 `vsum uninstall --purge-all` 精确清理
+- **Considered Options**: faster-whisper（CTranslate2，速度慢）；mlx-whisper 仅 macOS；whisper.cpp 仅 CLI；双引擎 Python binding
+- **Decision**: Apple Silicon 检测 (`sys.platform == "darwin" and platform.machine() == "arm64"`) → mlx-whisper；其他 → whisper.cpp CLI（用户自行安装到 PATH）
+- **Model Mapping**: 配置 `transcriptionModel` 统一用 `large-v3` 等名称，内部映射到各引擎模型 ID（mlx: `mlx-community/whisper-large-v3-mlx`；whisper.cpp: `ggml-large-v3.bin`）
+- **Download Fallback**: HuggingFace 失败时降级到 ModelScope
+- **Consequences**: macOS 用户获得最佳性能；非 macOS 用户需安装 whisper.cpp CLI；模型缓存目录保持 `~/.local/share/video-summary/models/`
 
-> **Update（2026-09）**: 默认权重后续调整为 `large-v3-turbo`（速度与体积优先），可通过 `ai.transcriptionModel` 覆盖，见 README 默认配置。下载与缓存目录决策不变。
+> **Update（2026-09）**: 默认 `ai.transcriptionModel=large-v3-turbo`（速度与体积优先），未命中引擎映射时各引擎回退到 `large-v3`，见 README 默认配置。下载与缓存目录决策不变。

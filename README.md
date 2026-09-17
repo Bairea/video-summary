@@ -1,10 +1,10 @@
 # Video Summary
 
-本地优先的视频总结器：输入 YouTube / Bilibili 视频链接，获取字幕（平台字幕或本地 faster-whisper 转写），生成摘要、Markmap 导图与带引用的问答。提供 CLI 与 Web UI 两种使用方式，并面向 Agent 生态以 skill 形式分发。
+本地优先的视频总结器：输入 YouTube / Bilibili 视频链接，获取字幕（平台字幕或本地转写），生成摘要、Markmap 导图与带引用的问答。提供 CLI 与 Web UI 两种使用方式，并面向 Agent 生态以 skill 形式分发。
 
 ## 特性
 
-- 平台字幕优先，本地 ASR 兜底（faster-whisper，跨平台 CPU/CUDA）
+- 平台字幕优先，本地 ASR 兜底（Apple Silicon 用 mlx-whisper，其他平台用 whisper.cpp CLI）
 - 摘要 / Markmap 导图 / 引用式问答（支持 Anthropic Messages 与 OpenAI 兼容两种协议）
 - 单向 CLI（`vsum summarize`）与 Web UI（`vsum serve`）共用同一流水线
 - Agent skill 分发：`vsum skill install` 安装到 `~/.claude/skills/`

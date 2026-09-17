@@ -1,7 +1,7 @@
 [project]
 name = "vsum"
 version = "0.1.1"
-description = "Local-first video summarizer: subtitles (yt-dlp / faster-whisper), AI summary, mindmap, cited QA. CLI + web UI."
+description = "Local-first video summarizer: subtitles (yt-dlp / mlx-whisper / whisper.cpp), AI summary, mindmap, cited QA. CLI + web UI."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -10,7 +10,7 @@ dependencies = [
     "uvicorn[standard]",
     "python-dotenv",
     "yt-dlp",
-    "faster-whisper",
+    "mlx-whisper",
     "openai",
     "httpx",
     "typer",
